@@ -275,7 +275,7 @@ class PFApp {
         self.printFriendlyModal.appendChild(footerDiv);
     }
 
-    dragEnterTargetDiv() {
+    dragEnterTargetDiv(event: MouseEvent) {
     }
 
     dragOverTargetDiv(event: MouseEvent) {
