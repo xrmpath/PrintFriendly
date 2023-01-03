@@ -51,8 +51,9 @@ class PFApp {
         this._includePrintFriendlyStyle = value;
     }
 
-    public constructor() {
+    public constructor(allowCustomSelections: boolean = true) {
         const self = this;
+        self.allowCustomSelections = allowCustomSelections;
         document.addEventListener('mouseup', (event) => {
             if (self.printFriendlyMode) {
                 if (new Date().getTime() - self._printFriendlyMousedownTime < 200) { //this is a click
