@@ -1,9 +1,9 @@
-
 class PFApp {
     public printFriendlyModal: HTMLDivElement;
     public printFriendlyMode: boolean = false;
     private _targetPrompt: HTMLDivElement;
     private _printFriendlyMessage: string = 'Ctrl-P to print again as-is. Or select content to customize your print out';
+    private _printerMessage: string = "<h2>Sending to printer, press \"Escape\" to return to the page</h2>";
     private _allowCustomSelections: boolean = true;
     private _includePrintFriendlyStyle: boolean = true;
 
@@ -23,6 +23,10 @@ class PFApp {
     private _targetDivDropHandler: any = null;
     private _lastRunTimer: number = 0;
 
+    private _originalContent: any = null;
+    private _printerContent: any = null;
+
+
     get printFriendlyMessage() {
         return this._printFriendlyMessage;
     }
@@ -34,7 +38,7 @@ class PFApp {
     get allowCustomSelections() {
         return this._allowCustomSelections;
     }
-    set allowCustomSelections(value: any) {
+    set allowCustomSelections(value: boolean) {
         this._allowCustomSelections = value;
     }
 
@@ -61,6 +65,9 @@ class PFApp {
                     self._printFriendlyMouseIsDown = false;
                     clearInterval(self._printFriendlyTimer);
                 } else {
+                    document.querySelectorAll('.selectedElement').forEach((currentElement: Element) => {
+                        (currentElement as HTMLElement).draggable = true;
+                    });
                     event.stopPropagation();
                     event.preventDefault();
                     clearInterval(self._printFriendlyTimer);
@@ -538,25 +545,55 @@ class PFApp {
 
     toggleprintFriendlyMode(event: KeyboardEvent) {
         const self = this;
-        if (self.allowCustomSelections == false && document.querySelector('.selectedElement') == null) {
+        if (self.allowCustomSelections == false && document.querySelector('.pfapp') == null) {
             return;
         }
         if (event.key === 'p' && event.ctrlKey) {
-            self.enterprintFriendlyMode();
+            if (self.printFriendlyMode) {
+                if (document.querySelector('.print-friendly__target').children.length > 0) {
+                    event.preventDefault();
+                    self._originalContent = document.body;
+                    self._printerContent = document.querySelector('.print-friendly__target');
+                    document.body.innerHTML = self._printerContent.innerHTML;
+                    let tmp = document.createElement("div");
+                    document.body.prepend(tmp);
+                    tmp.innerHTML = `
+                    <style>@page{size:auto;}</style>
+                    <div class="printermessage" style="top:-20px;float:left;position:fixed;margin-left:-250px;left:50%;width:500px;background-color:white;top:50%:margin-top:-100px;padding:40px 10px 40px 10px;z-index:1001;text-align:center;border:solid thin black;">
+                        ` + self._printerMessage +
+                        `
+                    </div>
+                `;
+                    //$('.container').removeClass('container');
+                    setTimeout(function () {
+
+                        (document.querySelector('.printermessage') as HTMLElement).style.display = "none";
+
+                        window.print();
+                        document.location.reload();
+                    }, 4000);
+                }
+                else {
+                    self.exitPrintFriendlyMode();
+                }
+            }
+            else {
+                self.enterPrintFriendlyMode(event);
+            }
         } else if (event.key === 'Escape') {
             if (document.querySelector('.selectedElement') != null){
                 self.unhighlightElements();
             }
             else {
-                self.exitprintFriendlyMode();
+                self.exitPrintFriendlyMode();
             }
         }
     }
 
-    enterprintFriendlyMode(){
+    enterPrintFriendlyMode(event: any = null){
         const self = this;
         if (!self.printFriendlyMode) {
-            event.preventDefault();
+            event?.preventDefault();
         }
         self.printFriendlyModal.querySelectorAll('*').forEach((currentElement) => {
             (currentElement as HTMLElement).classList.add('pfapp-ignore');
@@ -585,7 +622,7 @@ class PFApp {
         });
     }
 
-    exitprintFriendlyMode(){
+    exitPrintFriendlyMode(){
         const self = this;
         self.printFriendlyMode = false;
         self.printFriendlyModal.style.display = 'none';
